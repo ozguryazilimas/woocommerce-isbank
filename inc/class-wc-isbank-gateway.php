@@ -11,43 +11,87 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 		$this->title              = __( 'WooCommerce İşbank', 'wc-isbank' );
 		$this->method_title       = __( 'WooCommerce İşbank', 'wc-isbank' );
 		$this->method_description = __( '', 'wc-isbank' );
+		$this->has_fields = true;
+		$this->supports = array( 'products', 'default_credit_card_form' );
 
 		$this->form_fields = WC_Isbank_Gateway_Fields::init_fields();
 		$this->init_settings();
-
-		$this->enabled           = $this->get_option( 'enabled' );
-		$this->client_id         = $this->get_option( 'client_id' );
-		$this->store_key         = $this->get_option( 'store_key' );
-		$this->api_user          = $this->get_option( 'api_user' );
-		$this->api_user_password = $this->get_option( 'api_user_password' );
-
-		add_action(
-			'woocommerce_update_options_payment_gateways_' . $this->id,
-			array( $this, 'process_admin_options' )
-		);
 
 		add_action(
 			'woocommerce_receipt_' . $this->id,
 			array( $this, 'receipt_form' )
 		);
 
-		add_action( 'woocommerce_api_wc_gateway_iyzico', array( $this, 'iyzico_response' ) );
-	}
-
-	public function process_payment( $order_id ) {
-		$order = wc_get_order( $order_id );
-
-		return array(
-			'result'   => 'success',
-			'redirect' => $order->get_checkout_payment_url( true )
+		add_action(
+			'woocommerce_update_options_payment_gateways_' . $this->id,
+			array( $this, 'process_admin_options' )
 		);
+
+		add_action( 'woocommerce_api_wc_gateway_isbank', array( $this, 'api_response' ) );
+
+		$this->enabled           = $this->get_option( 'enabled' );
+		$this->client_id         = $this->get_option( 'client_id' );
+		$this->store_key         = $this->get_option( 'store_key' );
+		$this->api_user          = $this->get_option( 'api_user' );
+		$this->api_user_password = $this->get_option( 'api_user_password' );
 	}
 
 	public function receipt_form( $order_id ) {
 		echo WC_Isbank_Gateway_Form::init_form( $order_id, $this->store_key, $this->client_id, $this->get_return_url() );
 	}
 
-	public function iyzico_response() {
+	public function payment_fields() {
+		$form = new WC_Payment_Gateway_CC();
+		$form->id = 'isbank';
+		$form->payment_fields();
+	}
+
+	public function validate_fields() {
+
+		if ( isset( $_POST['payment_method'] ) && $_POST['payment_method'] == 'isbank' ) {
+
+			if ( empty( $_POST['isbank-card-number'] ) ||
+			     empty( $_POST['isbank-card-expiry'] ) ||
+			     empty( $_POST['isbank-card-cvc'] ) ) {
+
+				wc_add_notice( __( 'Tüm ödeme bilgi alanlarını doldurmalısın.', 'wc-isbank' ), 'error' );
+
+				return false;
+			}
+
+			$expiry_date = $_POST['isbank-card-expiry'];
+			$expiry_date = explode( ' / ', $expiry_date );
+
+			if ( strlen( $expiry_date[1] ) < 4 ) {
+				wc_add_notice( __( 'Kart vade yılını 4 basamaklı girmelisin.', 'wc-isbank' ), 'error' );
+
+				return false;
+			}
+
+			if ( $expiry_date[0] < date( 'm' ) || $expiry_date[1] < date( 'Y' ) ) {
+				wc_add_notice( __( 'Vadesi dolmuş kart ile ödeme yapamazsın.', 'wc-isbank' ), 'error' );
+
+				return false;
+			}
+		}
+	}
+
+	public function process_payment( $order_id ) {
+		$order = wc_get_order( $order_id );
+
+		$request = array(
+			'pan' => str_replace( array(' ', '-' ), '', $_POST['isbank-card-number'] ),
+			'Ecom_Payment_Card_ExpDate_Year' => explode( ' / ', $_POST['isbank-card-expiry'] )[1],
+			'Ecom_Payment_Card_ExpDate_Month' => explode( ' / ', $_POST['isbank-card-expiry'] )[0],
+		);
+
+		return array(
+			'result'   => 'success',
+			'redirect' => $order->get_checkout_payment_url( true ) . '&' . http_build_query( $request )
+		);
+	}
+
+	public function api_response() {
 		global $woocommerce;
 		$order_id  = $_POST['oid'];
 		$order     = new WC_Order( $order_id );
@@ -74,7 +118,7 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 			';
 
 			$ch = curl_init();
-			curl_setopt( $ch, CURLOPT_URL, "https://entegrasyon.asseco-see.com.tr/fim/api" );
+			curl_setopt( $ch, CURLOPT_URL, "https://sanalpos.isbank.com.tr/fim/api" );
 			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
 			curl_setopt( $ch, CURLOPT_TIMEOUT, 90 );
 			curl_setopt( $ch, CURLOPT_POSTFIELDS, $request );

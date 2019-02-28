@@ -38,8 +38,6 @@ if ( ! class_exists( 'WC_Isbank' ) ) {
 		public function plugins_loaded() {
 			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_isbank_gateway' ) );
 
-			add_action( 'wp_enqueue_scripts', array( $this, 'add_assets' ) );
-
 			self::$instance->includes();
 		}
 
@@ -55,15 +53,6 @@ if ( ! class_exists( 'WC_Isbank' ) ) {
 			$methods[] = 'WC_Isbank_Gateway';
 
 			return $methods;
-		}
-
-		public function add_assets() {
-			if ( is_checkout() ) {
-				wp_enqueue_style(
-					'woocommerce-isbank-css',
-					plugins_url( '/assets/css/checkout.css', __FILE__ )
-				);
-			}
 		}
 
 		public static function activation() {
