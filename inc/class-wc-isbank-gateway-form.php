@@ -19,7 +19,7 @@ class WC_Isbank_Gateway_Form {
 		$hashstr  = $client_id . $oid . $amount . $ok_url . $fail_url . 'Auth' . $taksit . $rnd . $store_key;
 		$hash     = base64_encode( pack( 'H*', sha1( $hashstr ) ) );
 
-		return '<form action="https://sanalpos.isbank.com.tr/fim/est3Dgate" method="post">
+		return '<form id="isbank-checkout-form" action="https://sanalpos.isbank.com.tr/fim/est3Dgate" method="post">
 			<input type="hidden" name="clientid" value="' . $client_id . '">
 			<input type="hidden" name="amount" value="' . $amount . '">
 			<input type="hidden" name="oid" value="' . $oid . '">
