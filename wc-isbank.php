@@ -33,12 +33,33 @@ if ( ! class_exists( 'WC_Isbank' ) ) {
 
 		private function init() {
 			add_filter( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'add_assets' ) );
 		}
 
 		public function plugins_loaded() {
 			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_isbank_gateway' ) );
 
 			self::$instance->includes();
+			self::$instance->define_ajax();
+		}
+
+		private function define_ajax() {
+			add_action( 'wp_ajax_validate_isbank_form', array( 'WC_Isbank_Gateway_Form', 'validate_fields' ) );
+			add_action( 'wp_ajax_nopriv_validate_isbank_form', array( 'WC_Isbank_Gateway_Form', 'validate_fields' ) );
+		}
+
+		public function add_assets() {
+			if ( is_checkout() ) {
+				wp_enqueue_style(
+					'woocommerce-isbank-css',
+					plugins_url( '/assets/css/checkout.css', __FILE__ )
+				);
+
+				wp_enqueue_script(
+					'woocommerce-isbank-js',
+					plugins_url( '/assets/js/checkout.js', __FILE__ )
+				);
+			}
 		}
 
 		protected function includes() {

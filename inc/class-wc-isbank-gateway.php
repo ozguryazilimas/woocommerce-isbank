@@ -8,11 +8,10 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 
 	public function __construct() {
 		$this->id                 = 'isbank';
-		$this->title              = __( 'WooCommerce İşbank', 'wc-isbank' );
-		$this->method_title       = __( 'WooCommerce İşbank', 'wc-isbank' );
+		$this->title              = __( 'Kredi Kartı', 'wc-isbank' );
+		$this->method_title       = __( 'Türkiye İş Bankası - WooCommerce', 'wc-isbank' );
 		$this->method_description = __( '', 'wc-isbank' );
-		$this->has_fields = true;
-		$this->supports = array( 'products', 'default_credit_card_form' );
+		$this->supports           = array( 'products' );
 
 		$this->form_fields = WC_Isbank_Gateway_Fields::init_fields();
 		$this->init_settings();
@@ -37,57 +36,31 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 	}
 
 	public function receipt_form( $order_id ) {
-		echo WC_Isbank_Gateway_Form::init_form( $order_id, $this->store_key, $this->client_id, $this->get_return_url() );
-	}
 
-	public function payment_fields() {
-		$form = new WC_Payment_Gateway_CC();
-		$form->id = 'isbank';
-		$form->payment_fields();
-	}
+		// Sepet bos ise odeme formu olusturmak yerine hata mesaji goster
+		if ( WC()->cart->is_empty() ) {
+			wc_add_notice( sprintf( __( 'Sorry, your session has expired. <a href="%s" class="wc-backward">Return to shop</a>', 'woocommerce' ), esc_url( wc_get_page_permalink( 'shop' ) ) ), 'error' );
 
-	public function validate_fields() {
-
-		if ( isset( $_POST['payment_method'] ) && $_POST['payment_method'] == 'isbank' ) {
-
-			if ( empty( $_POST['isbank-card-number'] ) ||
-			     empty( $_POST['isbank-card-expiry'] ) ||
-			     empty( $_POST['isbank-card-cvc'] ) ) {
-
-				wc_add_notice( __( 'Tüm ödeme bilgi alanlarını doldurmalısın.', 'wc-isbank' ), 'error' );
-
-				return false;
-			}
-
-			$expiry_date = $_POST['isbank-card-expiry'];
-			$expiry_date = explode( ' / ', $expiry_date );
-
-			if ( strlen( $expiry_date[1] ) < 4 ) {
-				wc_add_notice( __( 'Kart vade yılını 4 basamaklı girmelisin.', 'wc-isbank' ), 'error' );
-
-				return false;
-			}
-
-			if ( $expiry_date[0] < date( 'm' ) || $expiry_date[1] < date( 'Y' ) ) {
-				wc_add_notice( __( 'Vadesi dolmuş kart ile ödeme yapamazsın.', 'wc-isbank' ), 'error' );
-
-				return false;
-			}
+			return;
 		}
+
+		$args = array(
+			'form_id'    => $this->id,
+			'client_id'  => $this->client_id,
+			'store_key'  => $this->store_key,
+			'action_url' => 'https://sanalpos.isbank.com.tr/fim/est3Dgate',
+			'order_id'   => $order_id,
+		);
+
+		echo WC_Isbank_Gateway_Form::init_form( $args );
 	}
 
 	public function process_payment( $order_id ) {
 		$order = wc_get_order( $order_id );
 
-		$request = array(
-			'pan' => str_replace( array(' ', '-' ), '', $_POST['isbank-card-number'] ),
-			'Ecom_Payment_Card_ExpDate_Year' => explode( ' / ', $_POST['isbank-card-expiry'] )[1],
-			'Ecom_Payment_Card_ExpDate_Month' => explode( ' / ', $_POST['isbank-card-expiry'] )[0],
-		);
-
 		return array(
 			'result'   => 'success',
-			'redirect' => $order->get_checkout_payment_url( true ) . '&' . http_build_query( $request )
+			'redirect' => $order->get_checkout_payment_url( true )
 		);
 	}
 
@@ -120,6 +93,8 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 			$ch = curl_init();
 			curl_setopt( $ch, CURLOPT_URL, "https://sanalpos.isbank.com.tr/fim/api" );
 			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
+			curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, 1 );
+			curl_setopt( $ch, CURLOPT_SSLVERSION, 3 );
 			curl_setopt( $ch, CURLOPT_TIMEOUT, 90 );
 			curl_setopt( $ch, CURLOPT_POSTFIELDS, $request );
 			$result = curl_exec( $ch );
@@ -137,7 +112,7 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 			} else {
 				$error_message = (string) $result->ErrMsg;
 				wc_add_notice( $error_message, 'error' );
-				$order->add_order_note( 'Odeme Reddedildi' );
+				$order->add_order_note( __( 'Ödeme banka tarafından reddedildi.', 'wc-isbank' ) );
 
 				wp_redirect( $woocommerce->cart->get_cart_url() );
 				exit;

@@ -11,14 +11,14 @@ class WC_Isbank_Gateway_Fields {
 			'enabled'   => array(
 				'title' => __( 'Aktif/Deaktif', 'wc-isbank' ),
 				'type'  => 'checkbox',
-				'label' => __( 'WooCommerce İş bank Aktif et', 'wc-isbank' )
+				'label' => __( 'Türkiye İş Bankası Sanal Pos etkinleştir', 'wc-isbank' )
 			),
 			'client_id' => array(
 				'title' => __( 'Üye iş yeri numarası', 'wc-isbank' ),
 				'type'  => 'text'
 			),
 			'store_key' => array(
-				'title' => __( '3D Anahatarı', 'wc-isbank' ),
+				'title' => __( '3D Anahtarı', 'wc-isbank' ),
 				'type'  => 'text'
 			),
 			'api_user'  => array(
