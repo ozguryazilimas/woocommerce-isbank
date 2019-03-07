@@ -94,7 +94,6 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 			curl_setopt( $ch, CURLOPT_URL, "https://sanalpos.isbank.com.tr/fim/api" );
 			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
 			curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, 1 );
-			curl_setopt( $ch, CURLOPT_SSLVERSION, 3 );
 			curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, 0 );
 			curl_setopt( $ch, CURLOPT_TIMEOUT, 90 );
 			curl_setopt( $ch, CURLOPT_POSTFIELDS, $request );
