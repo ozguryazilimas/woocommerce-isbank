@@ -6,15 +6,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class WC_Isbank_Gateway extends WC_Payment_Gateway {
 
+	private $api_url = 'https://sanalpos.isbank.com.tr/fim/api';
+	private $est3Dgate_url = 'https://sanalpos.isbank.com.tr/fim/est3Dgate';
+
 	public function __construct() {
 		$this->id                 = 'isbank';
 		$this->title              = __( 'Kredi Kartı', 'wc-isbank' );
 		$this->method_title       = __( 'Türkiye İş Bankası - WooCommerce', 'wc-isbank' );
 		$this->method_description = __( '', 'wc-isbank' );
-		$this->supports           = array( 'products' );
+		$this->supports           = array( 'products', 'refunds' );
 
 		$this->form_fields = WC_Isbank_Gateway_Fields::init_fields();
 		$this->init_settings();
+
+		$test_mode = $this->get_option( 'test' );
+
+		if ( $test_mode == 'yes' ) {
+			$this->api_url       = 'https://entegrasyon.asseco-see.com.tr/fim/api';
+			$this->est3Dgate_url = 'https://entegrasyon.asseco-see.com.tr/fim/est3Dgate';
+		}
 
 		add_action(
 			'woocommerce_receipt_' . $this->id,
@@ -48,7 +58,7 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 			'form_id'    => $this->id,
 			'client_id'  => $this->client_id,
 			'store_key'  => $this->store_key,
-			'action_url' => 'https://sanalpos.isbank.com.tr/fim/est3Dgate',
+			'action_url' => $this->est3Dgate_url,
 			'order_id'   => $order_id,
 		);
 
@@ -73,33 +83,23 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 		if ( $md_status == "1" || $md_status == "2" || $md_status == "3" || $md_status == "4" ) {
 			$response = $_POST;
 
-			$request = '<?xml version="1.0" encoding="UTF-8"?>
-				<CC5Request>
-					<Name>' . $this->api_user . '</Name>
-					<Password>' . $this->api_user_password . '</Password>
-					<ClientId>' . $response['clientid'] . '</ClientId>
-					<IPAddress>' . $response['clientIp'] . '</IPAddress>
-					<OrderId>' . $order_id . '</OrderId>
-					<Type>' . $response['islemtipi'] . '</Type>
-					<Number>' . $response['md'] . '</Number>
-					<Amount>' . $response['amount'] . '</Amount>
-					<Currency>' . $response['currency'] . '</Currency>
-					<PayerTxnId>' . $response['xid'] . '</PayerTxnId>
-					<PayerSecurityLevel>' . $response['eci'] . '</PayerSecurityLevel>
-					<PayerAuthenticationCode>' . $response['cavv'] . '</PayerAuthenticationCode>
-				</CC5Request>
-			';
+			$xml_data = array(
+				'Name'                    => $this->api_user,
+				'Password'                => $this->api_user_password,
+				'ClientId'                => $response['clientid'],
+				'IPAdress'                => $response['clientIp'],
+				'OrderId'                 => $order_id,
+				'Type'                    => $response['islemtipi'],
+				'Number'                  => $response['md'],
+				'Amount'                  => $response['amount'],
+				'Currency'                => $response['currency'],
+				'PayerTxnId'              => $response['xid'],
+				'PayerSecurityLevel'      => $response['eci'],
+				'PayerAuthenticationCode' => $response['cavv']
+			);
 
-			$ch = curl_init();
-			curl_setopt( $ch, CURLOPT_URL, "https://sanalpos.isbank.com.tr/fim/api" );
-			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
-			curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, 1 );
-			curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, 0 );
-			curl_setopt( $ch, CURLOPT_TIMEOUT, 90 );
-			curl_setopt( $ch, CURLOPT_POSTFIELDS, $request );
-			$result = curl_exec( $ch );
-
-			$result = simplexml_load_string( $result );
+			$request = new WC_Isbank_Request( $this->api_url );
+			$result  = $request->send( $xml_data );
 
 			$response = (string) $result->Response;
 
@@ -122,5 +122,28 @@ class WC_Isbank_Gateway extends WC_Payment_Gateway {
 			wp_redirect( $woocommerce->cart->get_cart_url() );
 			exit;
 		}
+	}
+
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		$xml_data = array(
+			'Name'     => $this->api_user,
+			'Password' => $this->api_user_password,
+			'ClientId' => $this->client_id,
+			'OrderId'  => $order_id,
+			'Type'     => 'Credit',
+			'Amount'   => $amount,
+			'Currency' => '949'
+		);
+
+		$request = new WC_Isbank_Request( $this->api_url );
+		$result  = $request->send( $xml_data );
+
+		$response = (string) $result->Response;
+
+		if ( 'Approved' === $response ) {
+			return true;
+		}
+
+		return false;
 	}
 }

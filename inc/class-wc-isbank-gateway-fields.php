@@ -13,6 +13,10 @@ class WC_Isbank_Gateway_Fields {
 				'type'  => 'checkbox',
 				'label' => __( 'Türkiye İş Bankası Sanal Pos etkinleştir', 'wc-isbank' )
 			),
+			'test'  => array(
+				'title' => __( 'Test ortamını aktif et', 'wc-isbank' ),
+				'type'  => 'checkbox'
+			),
 			'client_id' => array(
 				'title' => __( 'Üye iş yeri numarası', 'wc-isbank' ),
 				'type'  => 'text'

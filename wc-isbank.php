@@ -64,6 +64,7 @@ if ( ! class_exists( 'WC_Isbank' ) ) {
 
 		protected function includes() {
 			if ( class_exists( 'WC_Payment_Gateway' ) ) {
+				include_once( WC_ISBANK_INCLUDES . 'class-wc-isbank-request.php' );
 				include_once( WC_ISBANK_INCLUDES . 'class-wc-isbank-gateway.php' );
 				include_once( WC_ISBANK_INCLUDES . 'class-wc-isbank-gateway-fields.php' );
 				include_once( WC_ISBANK_INCLUDES . 'class-wc-isbank-gateway-form.php' );
