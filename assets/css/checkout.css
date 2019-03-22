@@ -1,0 +1,13 @@
+.wc-isbank-checkout.woocommerce-checkout {
+    width: 60%;
+    margin: 0 auto;
+}
+
+.wc-isbank-checkout.woocommerce-checkout #payment div.payment_box::before {
+    content: unset;
+}
+
+.wc-isbank-checkout.woocommerce-checkout #payment ul.payment_methods li input {
+    margin: 0px;
+    border-radius: 5px;
+}
