@@ -57,7 +57,8 @@ if ( ! class_exists( 'WC_Isbank' ) ) {
 
 				wp_enqueue_script(
 					'woocommerce-isbank-js',
-					plugins_url( '/assets/js/checkout.js', __FILE__ )
+                    plugins_url( '/assets/js/checkout.js', __FILE__ ),
+                    array('jquery')
 				);
 			}
 		}
