@@ -1,6 +1,11 @@
 <?php
 /**
  * Plugin Name: WooCommerce İş Bank
+ * Plugin URI:  https://ozguryazilim.com.tr
+ * Description: Türkiye İş Bankası sanal pos üzerinden 3D destekli ödeme almayı sağlayan WooCommerce eklentisi.
+ * Version:     1.0.0
+ * Author:      Adil Öztaşer
+ * License:     GPLv2
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
